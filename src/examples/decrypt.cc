@@ -30,23 +30,23 @@
     also delete it here.
 */
 
-#include <stdio.h>
+#include <cstdio>
 #include <iostream>
 #include <sstream>
 
-#include "crypto.h"
+#include "src/crypto/crypto.h"
 
 using namespace Crypto;
 
-int main( int argc, char *argv[] )
+int main( int argc, char* argv[] )
 {
   if ( argc != 2 ) {
-    fprintf( stderr, "Usage: %s KEY\n", argv[ 0 ] );
+    fprintf( stderr, "Usage: %s KEY\n", argv[0] );
     return 1;
   }
 
   try {
-    Base64Key key( argv[ 1 ] );
+    Base64Key key( argv[1] );
     Session session( key );
 
     /* Read input */
@@ -57,10 +57,9 @@ int main( int argc, char *argv[] )
 
     Message message = session.decrypt( input.str() );
 
-    fprintf( stderr, "Nonce = %ld\n",
-	     (long)message.nonce.val() );
+    fprintf( stderr, "Nonce = %ld\n", (long)message.nonce.val() );
     std::cout << message.text;
-  } catch ( const CryptoException &e ) {
+  } catch ( const CryptoException& e ) {
     std::cerr << e.what() << std::endl;
     exit( 1 );
   }

@@ -30,14 +30,13 @@
     also delete it here.
 */
 
-#include <assert.h>
+#include <cassert>
+
 #include "terminaluserinput.h"
 
 using namespace Terminal;
-using std::string;
 
-string UserInput::input( const Parser::UserByte *act,
-			 bool application_mode_cursor_keys )
+std::string UserInput::input( const Parser::UserByte* act, bool application_mode_cursor_keys )
 {
   /* The user will always be in application mode. If stm is not in
      application mode, convert user's cursor control function to an
@@ -50,35 +49,33 @@ string UserInput::input( const Parser::UserByte *act,
      two octets in UTF-8. Fortunately nobody seems to send this. */
 
   switch ( state ) {
-  case Ground:
-    if ( act->c == 0x1b ) { /* ESC */
-      state = ESC;
-    }
-    return string( &act->c, 1 );
+    case Ground:
+      if ( act->c == 0x1b ) { /* ESC */
+        state = ESC;
+      }
+      return std::string( &act->c, 1 );
 
-  case ESC:
-    if ( act->c == 'O' ) { /* ESC O = 7-bit SS3 */
-      state = SS3;
-      return string();
-    }
-    state = Ground;
-    return string( &act->c, 1 );
+    case ESC:
+      if ( act->c == 'O' ) { /* ESC O = 7-bit SS3 */
+        state = SS3;
+        return std::string();
+      }
+      state = Ground;
+      return std::string( &act->c, 1 );
 
-  case SS3:
-    state = Ground;
-    if ( (!application_mode_cursor_keys)
-	 && (act->c >= 'A')
-	 && (act->c <= 'D') ) {
-      char translated_cursor[ 2 ] = { '[', act->c };
-      return string( translated_cursor, 2 );
-    } else {
-      char original_cursor[ 2 ] = { 'O', act->c };
-      return string( original_cursor, 2 );
-    }
+    case SS3:
+      state = Ground;
+      if ( ( !application_mode_cursor_keys ) && ( act->c >= 'A' ) && ( act->c <= 'D' ) ) {
+        char translated_cursor[2] = { '[', act->c };
+        return std::string( translated_cursor, 2 );
+      } else {
+        char original_cursor[2] = { 'O', act->c };
+        return std::string( original_cursor, 2 );
+      }
 
-  default:
-    assert( !"unexpected state" );
-    state = Ground;
-    return string();
+    default:
+      assert( !"unexpected state" );
+      state = Ground;
+      return std::string();
   }
 }

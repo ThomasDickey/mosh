@@ -30,30 +30,29 @@
     also delete it here.
 */
 
-#include "config.h"
+#include "src/include/config.h"
 
-#if !defined(HAVE_FORKPTY) || !defined(HAVE_CFMAKERAW)
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#if !defined( HAVE_FORKPTY ) || !defined( HAVE_CFMAKERAW )
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/stropts.h>
 #include <termios.h>
+#include <unistd.h>
 
-#include "pty_compat.h"
+#include "src/util/pty_compat.h"
 
 #ifndef HAVE_FORKPTY
-pid_t my_forkpty( int *amaster, char *name,
-		  const struct termios *termp,
-		  const struct winsize *winp )
-{ 
+pid_t my_forkpty( int* amaster, char* name, const struct termios* termp, const struct winsize* winp )
+{
   /* For Solaris and AIX */
-  int master, slave; 
-  char *slave_name; 
-  pid_t pid; 
-   
+  int master, slave;
+  char* slave_name;
+  pid_t pid;
+
 #ifdef _AIX
 #define PTY_DEVICE "/dev/ptc"
 #else
@@ -72,7 +71,7 @@ pid_t my_forkpty( int *amaster, char *name,
     return -1;
   }
 
-  if ( unlockpt(master) < 0 ) {
+  if ( unlockpt( master ) < 0 ) {
     perror( "unlockpt" );
     close( master );
     return -1;
@@ -93,8 +92,7 @@ pid_t my_forkpty( int *amaster, char *name,
   }
 
 #ifndef _AIX
-  if ( ioctl(slave, I_PUSH, "ptem") < 0 ||
-       ioctl(slave, I_PUSH, "ldterm") < 0 ) {
+  if ( ioctl( slave, I_PUSH, "ptem" ) < 0 || ioctl( slave, I_PUSH, "ldterm" ) < 0 ) {
     perror( "ioctl(I_PUSH)" );
     close( slave );
     close( master );
@@ -105,7 +103,7 @@ pid_t my_forkpty( int *amaster, char *name,
   if ( amaster != NULL )
     *amaster = master;
 
-  if ( name != NULL)
+  if ( name != NULL )
     strcpy( name, slave_name );
 
   if ( termp != NULL ) {
@@ -121,7 +119,7 @@ pid_t my_forkpty( int *amaster, char *name,
   w.ws_col = 80;
   w.ws_xpixel = 0;
   w.ws_ypixel = 0;
-  if ( ioctl( slave, TIOCSWINSZ, &w) < 0 ) {
+  if ( ioctl( slave, TIOCSWINSZ, &w ) < 0 ) {
     perror( "ioctl TIOCSWINSZ" );
     exit( 1 );
   }
@@ -134,51 +132,50 @@ pid_t my_forkpty( int *amaster, char *name,
 
   pid = fork();
   switch ( pid ) {
-  case -1: /* Error */
-    perror( "fork()" );
-    return -1;
-  case 0: /* Child */
-    if ( setsid() < 0 )
-      perror( "setsid" );
-#ifdef TIOCSCTTY
-    if ( ioctl( slave, TIOCSCTTY, NULL ) < 0 ) {
-      perror( "ioctl" );
+    case -1: /* Error */
+      perror( "fork()" );
       return -1;
-    }
+    case 0: /* Child */
+      if ( setsid() < 0 )
+        perror( "setsid" );
+#ifdef TIOCSCTTY
+      if ( ioctl( slave, TIOCSCTTY, NULL ) < 0 ) {
+        perror( "ioctl" );
+        return -1;
+      }
 #else
-    {
+      {
         int dummy_fd;
-        dummy_fd = open (slave_name, O_RDWR);
-        if (dummy_fd < 0) {
-            perror( "open(slave_name)" );
-            return -1;
+        dummy_fd = open( slave_name, O_RDWR );
+        if ( dummy_fd < 0 ) {
+          perror( "open(slave_name)" );
+          return -1;
         }
-        close (dummy_fd);
-    }
+        close( dummy_fd );
+      }
 #endif /* TIOCSCTTY */
-    close( master );
-    dup2( slave, STDIN_FILENO );
-    dup2( slave, STDOUT_FILENO );
-    dup2( slave, STDERR_FILENO );
-    return 0;
-  default: /* Parent */
-    close( slave );
-    return pid;
+      close( master );
+      dup2( slave, STDIN_FILENO );
+      dup2( slave, STDOUT_FILENO );
+      dup2( slave, STDERR_FILENO );
+      return 0;
+    default: /* Parent */
+      close( slave );
+      return pid;
   }
 }
 #endif
 
 #ifndef HAVE_CFMAKERAW
-void my_cfmakeraw( struct termios *termios_p )
+void my_cfmakeraw( struct termios* termios_p )
 {
-  termios_p->c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP
-			  | INLCR | IGNCR | ICRNL | IXON);
+  termios_p->c_iflag &= ~( IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON );
   termios_p->c_oflag &= ~OPOST;
-  termios_p->c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-  termios_p->c_cflag &= ~(CSIZE | PARENB);
+  termios_p->c_lflag &= ~( ECHO | ECHONL | ICANON | ISIG | IEXTEN );
+  termios_p->c_cflag &= ~( CSIZE | PARENB );
   termios_p->c_cflag |= CS8;
 
-  termios_p->c_cc[VMIN] = 1; // read() is satisfied after 1 char
+  termios_p->c_cc[VMIN] = 1;  // read() is satisfied after 1 char
   termios_p->c_cc[VTIME] = 0; // No timer
 }
 #endif
